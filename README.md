@@ -1,3 +1,16 @@
+> [!NOTE]
+> **About this branch (`ffr-bindless-texel-fixes`)**
+>
+> This is a personal fork of [seedds/nxnative](https://github.com/seedds/nxnative), made so others can test two graphics fixes for FINAL FANTASY RESONANCE 1.0.1 (see [issue #168](https://github.com/seedds/nxnative/issues/168)). It is not an official nxnative release, and the original repository is not affected.
+>
+> - **Base commit:** `4f29560` (Merge PR #166). The fixes are two commits on top of it.
+> - **Misaligned buffer textures** (`dm/gfx/nvn/nvn_mtl.m`, `tbuf_shadow`): on an M4, a buffer texture at a pool offset that is not 16-byte aligned reads from the 16-byte boundary below it. Unreal's particle data is read this way, so fires drew nothing or flickered. Such textures are now read through an aligned copy made once per submission.
+> - **Bindless reads through phis** (Ryujinx `BindlessElimination.cs`, `Optimizer.cs`, `ResourceManager.cs`): reads whose texture handle was a phi of `c[2]` handles mixed with junk were deleted (result 0), so Niagara fire and smoke meshes collapsed. They now use the one handle, or one read per candidate picked by the handle's value at run time. About 86,600 reads in 6,100 FFR shaders are recovered; 29 reads in 17 shaders are still dropped.
+> - **Rebuild requirements:** the translator in `dm/gfx/tools/dmsh_xlate_bin` is already rebuilt and matches `dmsh_chain.lock`, and `dm/gfx/nvn/dmsh_chain.h` is updated (chain `24ebc2fe842b`). Nothing needs to be rebuilt by hand: check out this branch and run `scripts/build_ipa_from_nsp.py` as usual. The changed chain makes it translate the game's shaders again, so the first build takes longer.
+> - **Testing status:** tested only on a Mac (M4 Pro, macOS 27): fires, smoke and effects render, 60 fps. Not tested on iPhone or iPad. Whether iPhone GPUs have the same buffer-texture alignment behaviour is unknown.
+>
+> **AI disclosure:** the investigation and these changes were made with [Claude Code](https://claude.com/claude-code) (Anthropic) and tested by me. Review before relying on them.
+
 # nxnative
 
 Play your own Nintendo Switch games natively on iPhone and iPad. Bring your game (its NSP files) and your `prod.keys`; one script turns them into an IPA that you sideload.
